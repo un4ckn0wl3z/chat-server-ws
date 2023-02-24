@@ -1,7 +1,7 @@
-import { WebSocketGateway, SubscribeMessage, MessageBody, WebSocketServer } from '@nestjs/websockets';
+import { WebSocketGateway, SubscribeMessage, MessageBody, WebSocketServer, ConnectedSocket } from '@nestjs/websockets';
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
-import { Server } from 'http';
+import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
@@ -17,10 +17,10 @@ export class MessagesGateway {
 
   @SubscribeMessage('createMessage')
   async create(@MessageBody() createMessageDto: CreateMessageDto) {
-    const message = this.messagesService.create(createMessageDto);
+    const message = await this.messagesService.create(createMessageDto);
+    console.log(message)
     this.server.emit('message', message);
     return message;
-    // https://youtu.be/atbdpX4CViM?t=784
   }
 
   @SubscribeMessage('findAllMessages')
@@ -29,13 +29,14 @@ export class MessagesGateway {
   }
 
   @SubscribeMessage('join')
-  joinRoom() {
-    // TODO
+  joinRoom(@MessageBody('name') name: string, @ConnectedSocket() client: Socket) {
+    this.messagesService.indentify(name, client.id);
   }
 
   @SubscribeMessage('typing')
-  async typing() {
-    // TODO
+  async typing(@MessageBody('isTyping') isTyping: boolean, @ConnectedSocket() client: Socket) {
+    const name = await this.messagesService.getClientName(client.id);
+    client.broadcast.emit('typing', {name, isTyping});
   }
 
 }
