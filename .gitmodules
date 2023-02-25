@@ -1,0 +1,3 @@
+[submodule "client"]
+	path = client
+	url = https://github.com/un4ckn0wl3z/vue-chat-client-ws.git
